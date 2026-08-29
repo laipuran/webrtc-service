@@ -1,0 +1,32 @@
+use serde::{Deserialize, Serialize};
+
+pub type PeerId = u64;
+
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(tag = "type")]
+pub struct Member {
+    pub peer_id: PeerId,
+    pub username: String,
+}
+
+/// 客户端发送给服务器的信令消息。
+#[derive(Serialize, Deserialize)]
+#[serde(tag = "type")]
+pub enum ClientMsg {
+    Join {
+        room_id: String,
+        auth: String,
+        username: String,
+    },
+    Leave, // 主动离开的请求
+}
+
+/// 服务器发送给客户端的信令消息。
+#[derive(Serialize, Deserialize)]
+#[serde(tag = "type")]
+pub enum ServerMsg {
+    Joined { peer_id: PeerId, room_id: String },
+    Roster { members: Vec<Member> },
+    PeerLeft { peer_id: PeerId },
+    Error { message: String },
+}
