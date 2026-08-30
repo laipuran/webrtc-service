@@ -4,10 +4,15 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+anyhow = "1.0.104"
+crossfire = { version = "3.1.19", features = ["tokio"] }
+dashmap = "6.2.1"
 env_logger = "0.11.11"
 futures-util = { version = "0.3.34", features = ["sink"] }
 log = "0.4.34"
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
+thiserror = "2.0.20"
 tokio = { version = "1.53.1", features = ["full"] }
 tokio-tungstenite = "0.30.0"
+uuid = { version = "1.26.0", features = ["v7"] }

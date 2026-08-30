@@ -4,12 +4,12 @@ use crate::room::{id::RoomId, member::MemberId};
 
 #[derive(Deserialize)]
 pub enum ClientMessage {
-    Join {
+    JoinRoom {
         room_id: RoomId,
         username: String,
         auth: String,
     },
-    Leave {
+    LeaveRoom {
         room_id: RoomId,
     },
     Say {
@@ -18,22 +18,19 @@ pub enum ClientMessage {
     },
 }
 
-#[derive(Clone, Serialize)]
+#[derive(Serialize)]
 pub enum ServerMessage {
-    Join {
+    MemberJoin {
         room_id: RoomId,
         member_id: MemberId,
         member_username: String,
     },
-    Left {
+    MemberLeft {
         room_id: RoomId,
         member_id: MemberId,
     },
-    Say {
+    MemberSay {
         room_id: String,
         content: String,
-    },
-    Error {
-        message: String,
     },
 }
