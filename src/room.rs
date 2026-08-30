@@ -39,7 +39,12 @@ impl Room {
         }
 
         // TODO: This may be useless.
-        if self.members.iter().position(|m| m.peer_id == peer_id).is_some() {
+        if self
+            .members
+            .iter()
+            .position(|m| m.peer_id == peer_id)
+            .is_some()
+        {
             return Err(RoomError::JoinedTwice);
         }
 
@@ -91,10 +96,17 @@ impl RoomState {
 
     pub fn leave(&mut self, room_id: &str, peer_id: PeerId) -> Result<(), RoomError> {
         let room = self.rooms.get_mut(room_id);
-        match room {
-            None => Err(RoomError::RoomNotExists),
-            Some(room) => room.leave(peer_id),
+        let empty = match room {
+            None => return Err(RoomError::RoomNotExists),
+            Some(r) => {
+                r.leave(peer_id)?;
+                r.members.is_empty()
+            }
+        };
+        if empty {
+            self.rooms.remove(room_id);
         }
+        Ok(())
     }
 }
 
