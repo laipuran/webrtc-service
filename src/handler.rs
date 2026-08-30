@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use futures_util::{SinkExt, StreamExt};
 use log::{info, warn};
@@ -8,8 +8,8 @@ use tokio_tungstenite::tungstenite::Message;
 
 use crate::{
     AppState,
-    message::{ClientMsg, Member, PeerId, ServerMsg},
-    room::RoomError,
+    message::{ClientMsg, Member, PeerId, ServerMsg, Signal},
+    room::{RoomError, RoomState},
     signaling::{
         Dest::{self, Myself},
         JoinResult, handle_join, handle_leave,
@@ -124,13 +124,10 @@ fn handle_client_msg(
             auth,
             username,
         } => handle_join_msg(app_state, conn_state, tx, room_id, auth, username),
-        ClientMsg::Leave => match conn_state.take() {
-            Some(conn) => {
-                app_state.bus.lock().unwrap().remove(&conn.member.peer_id);
-                handle_leave(&app_state.room_state, &conn.room_id, conn.member.peer_id)
-            }
-            None => Vec::new(),
-        },
+        ClientMsg::Leave => handle_leave_msg(app_state, conn_state),
+        ClientMsg::Signal { to, signal } => {
+            handle_signal_msg(&app_state.room_state, conn_state, to, signal)
+        }
     }
 }
 
@@ -163,4 +160,41 @@ fn handle_join_msg(
             JoinResult::Rejected { messages } => messages,
         }
     }
+}
+
+fn handle_leave_msg(
+    app_state: &Arc<AppState>,
+    conn_state: &mut Option<Connection>,
+) -> Vec<(Dest, ServerMsg)> {
+    match conn_state.take() {
+        Some(conn) => {
+            app_state.bus.lock().unwrap().remove(&conn.member.peer_id);
+            handle_leave(&app_state.room_state, &conn.room_id, conn.member.peer_id)
+        }
+        None => Vec::new(),
+    }
+}
+
+fn handle_signal_msg(
+    room_state: &Mutex<RoomState>,
+    conn_state: &mut Option<Connection>,
+    to: PeerId,
+    signal: Signal,
+) -> Vec<(Dest, ServerMsg)> {
+    let Some(connection) = conn_state else {
+        return Vec::new();
+    };
+    let guard = room_state.lock().unwrap();
+    let Ok(members) = guard.members(&connection.room_id) else {
+        return Vec::new();
+    };
+    if members.iter().position(|m| m.peer_id == to).is_some() {
+        let dest = Dest::Peer(to);
+        let msg = ServerMsg::Signal {
+            from: connection.member.peer_id,
+            signal,
+        };
+        return vec![(dest, msg)];
+    }
+    Vec::new()
 }

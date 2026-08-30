@@ -9,6 +9,14 @@ pub struct Member {
     pub username: String,
 }
 
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(tag = "type")]
+pub enum Signal {
+    Offer { sdp: String },
+    Answer { sdp: String },
+    IceCandidate { candidate: String },
+}
+
 /// 客户端发送给服务器的信令消息。
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "type")]
@@ -18,7 +26,11 @@ pub enum ClientMsg {
         auth: String,
         username: String,
     },
-    Leave, // 主动离开的请求
+    Leave,
+    Signal {
+        to: PeerId,
+        signal: Signal,
+    },
 }
 
 /// 服务器发送给客户端的信令消息。
@@ -29,4 +41,5 @@ pub enum ServerMsg {
     Roster { members: Vec<Member> },
     PeerLeft { peer_id: PeerId },
     Error { message: String },
+    Signal { from: PeerId, signal: Signal },
 }

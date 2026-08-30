@@ -14,10 +14,7 @@ use tokio::{net::TcpListener, sync::mpsc::UnboundedSender};
 use tokio_tungstenite::tungstenite::Message;
 
 use crate::room::RoomState;
-use crate::{
-    handler::handle_ws,
-    message::PeerId,
-};
+use crate::{handler::handle_ws, message::PeerId};
 
 pub struct AppState {
     room_state: Mutex<RoomState>,
