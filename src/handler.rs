@@ -7,7 +7,10 @@ use tokio_tungstenite::accept_async;
 use tokio_tungstenite::tungstenite::Message;
 
 use crate::{
-    AppState, message::{ClientMsg, Member, PeerId, ServerMsg}, room::RoomError, signaling::{
+    AppState,
+    message::{ClientMsg, Member, PeerId, ServerMsg},
+    room::RoomError,
+    signaling::{
         Dest::{self, Myself},
         JoinResult, handle_join, handle_leave,
     },
@@ -122,7 +125,10 @@ fn handle_client_msg(
             username,
         } => handle_join_msg(app_state, conn_state, tx, room_id, auth, username),
         ClientMsg::Leave => match conn_state.take() {
-            Some(conn) => handle_leave(&app_state.room_state, &conn.room_id, conn.member.peer_id),
+            Some(conn) => {
+                app_state.bus.lock().unwrap().remove(&conn.member.peer_id);
+                handle_leave(&app_state.room_state, &conn.room_id, conn.member.peer_id)
+            }
             None => Vec::new(),
         },
     }
