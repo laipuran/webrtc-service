@@ -53,7 +53,7 @@ impl Room {
             self.members.remove(pos);
             Ok(())
         } else {
-            Err(RoomError::PeerNotExists)
+            Err(RoomError::MemberNotExists)
         }
     }
 
@@ -63,12 +63,12 @@ impl Room {
         }
     }
 
-    pub fn send_to(&self, member_id: &MemberId, message: ServerMessage) -> bool {
+    pub fn send_to(&self, member_id: &MemberId, message: ServerMessage) -> RoomResult<()> {
         if let Some(member) = self.members.iter().find(|m| &m.id == member_id) {
             member.submit(message);
-            true
+            Ok(())
         } else {
-            false
+            Err(RoomError::MemberNotExists)
         }
     }
 

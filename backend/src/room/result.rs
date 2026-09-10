@@ -6,8 +6,8 @@ pub enum RoomError {
     AuthFailed,
     #[error("Already joined a room")]
     JoinedTwice,
-    #[error("Peer not in room")]
-    PeerNotExists,
+    #[error("Member not in room")]
+    MemberNotExists,
     // #[error("Room does not exist")]
     // RoomNotExists,
 }

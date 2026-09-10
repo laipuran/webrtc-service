@@ -42,4 +42,10 @@ impl Member {
     pub fn submit(&self, message: ServerMessage) {
         let _ = self.outbound.send(message);
     }
+
+    pub fn submit_error(&self, error: impl std::fmt::Display) {
+        self.submit(ServerMessage::Error {
+            message: error.to_string(),
+        });
+    }
 }

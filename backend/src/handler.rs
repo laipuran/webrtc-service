@@ -39,9 +39,7 @@ fn join_room(
     username: String,
 ) {
     if connection.has_joined() {
-        connection.member.submit(ServerMessage::Error {
-            message: RoomError::JoinedTwice.to_string(),
-        });
+        connection.member.submit_error(RoomError::JoinedTwice);
         return;
     }
 
@@ -64,9 +62,7 @@ fn join_room(
         }
         Err(e) => {
             warn!("join room failed: {}", e);
-            connection.member.submit(ServerMessage::Error {
-                message: e.to_string(),
-            });
+            connection.member.submit_error(e);
         }
     }
 }
@@ -87,9 +83,7 @@ fn leave_room(state: &AppState, connection: &mut Connection) {
             }
             Err(e) => {
                 warn!("leave room failed: {}", e);
-                connection.member.submit(ServerMessage::Error {
-                    message: e.to_string(),
-                });
+                connection.member.submit_error(e);
             }
         }
     }
@@ -106,13 +100,17 @@ fn forward_signal(state: &AppState, connection: &Connection, to: MemberId, signa
     let Some(room) = state.rooms().get(room_id) else {
         return;
     };
-    room.send_to(
+    let result = room.send_to(
         &to,
         ServerMessage::Signal {
             from: connection.member.id.clone(),
             signal,
         },
     );
+    if let Err(e) = result {
+        warn!("forward signal failed: {}", e);
+        connection.member.submit_error(e);
+    }
 }
 
 fn handle_client_message(state: &AppState, connection: &mut Connection, message: ClientMessage) {
