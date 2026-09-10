@@ -1,11 +1,10 @@
 use serde::{Deserialize, Serialize};
 
-pub type PeerId = u64;
+use crate::room::{id::RoomId, member::MemberId};
 
-#[derive(Clone, Serialize, Deserialize)]
-#[serde(tag = "type")]
-pub struct Member {
-    pub peer_id: PeerId,
+#[derive(Clone, Serialize)]
+pub struct MemberSummary {
+    pub member_id: MemberId,
     pub username: String,
 }
 
@@ -17,29 +16,39 @@ pub enum Signal {
     IceCandidate { candidate: String },
 }
 
-/// 客户端发送给服务器的信令消息。
-#[derive(Serialize, Deserialize)]
+#[derive(Deserialize)]
 #[serde(tag = "type")]
-pub enum ClientMsg {
+pub enum ClientMessage {
     Join {
-        room_id: String,
+        room_id: RoomId,
         auth: String,
         username: String,
     },
     Leave,
     Signal {
-        to: PeerId,
+        to: MemberId,
         signal: Signal,
     },
 }
 
-/// 服务器发送给客户端的信令消息。
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Clone)]
 #[serde(tag = "type")]
-pub enum ServerMsg {
-    Joined { peer_id: PeerId, room_id: String },
-    Roster { members: Vec<Member> },
-    PeerLeft { peer_id: PeerId },
-    Error { message: String },
-    Signal { from: PeerId, signal: Signal },
+pub enum ServerMessage {
+    Joined {
+        member_id: MemberId,
+        room_id: RoomId,
+    },
+    Roster {
+        members: Vec<MemberSummary>,
+    },
+    MemberLeft {
+        member_id: MemberId,
+    },
+    Error {
+        message: String,
+    },
+    Signal {
+        from: MemberId,
+        signal: Signal,
+    },
 }
