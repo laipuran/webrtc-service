@@ -1,0 +1,14 @@
+services:
+  backend:
+    image: ${BACKEND_IMAGE:-crpi-qcgrey9r8mwimzih.cn-hangzhou.personal.cr.aliyuncs.com/duckran/webrtc-service-backend:latest}
+    restart: unless-stopped
+    expose:
+      - "9001"
+
+  frontend:
+    image: ${FRONTEND_IMAGE:-crpi-qcgrey9r8mwimzih.cn-hangzhou.personal.cr.aliyuncs.com/duckran/webrtc-service-frontend:latest}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "127.0.0.1:8080:80"

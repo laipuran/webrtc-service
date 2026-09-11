@@ -15,8 +15,9 @@ use crate::{handler::AppHandler, state::AppState};
 async fn main() -> Result<(), Box<dyn Error>> {
     env_logger::init();
 
-    let listener = TcpListener::bind("127.0.0.1:9001").await?;
-    info!("Listening at 127.0.0.1:9001.");
+    let bind_addr = std::env::var("BIND_ADDR").unwrap_or_else(|_| "0.0.0.0:9001".to_string());
+    let listener = TcpListener::bind(&bind_addr).await?;
+    info!("Listening at {bind_addr}.");
 
     let app_handler = AppHandler::new(AppState::default());
     loop {
