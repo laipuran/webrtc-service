@@ -3,7 +3,7 @@ import CallStage from './components/CallStage.vue'
 import JoinForm from './components/JoinForm.vue'
 import { useCall } from './composables/useCall'
 
-const SIGNALING_URL = 'ws://127.0.0.1:9001'
+const SIGNALING_URL = `wss://${location.host}/ws`
 
 const {
   status,

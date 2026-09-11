@@ -15,6 +15,9 @@ importers:
       '@types/node':
         specifier: ^24.13.3
         version: 24.13.3
+      '@vitejs/plugin-basic-ssl':
+        specifier: ^2.3.0
+        version: 2.3.0(vite@8.2.2(@types/node@24.13.3))
       '@vitejs/plugin-vue':
         specifier: ^6.0.8
         version: 6.0.8(vite@8.2.2(@types/node@24.13.3))(vue@3.5.42(typescript@6.0.3))
@@ -176,6 +179,12 @@ packages:
 
   '@types/node@24.13.3':
     resolution: {integrity: sha512-Dh8vAsV36ig5wa9OX4pXvMc9D3Veibfw2wix0CUwYODLD8nkj9UsLjASr49nPg+2eKzxhBV+v7L8pXvT4e639Q==}
+
+  '@vitejs/plugin-basic-ssl@2.3.0':
+    resolution: {integrity: sha512-bdyo8rB3NnQbikdMpHaML9Z1OZPBu6fFOBo+OtxsBlvMJtysWskmBcnbIDhUqgC8tcxNv/a+BcV5U+2nQMm1OQ==}
+    engines: {node: ^18.0.0 || ^20.0.0 || >=22.0.0}
+    peerDependencies:
+      vite: ^6.0.0 || ^7.0.0 || ^8.0.0
 
   '@vitejs/plugin-vue@6.0.8':
     resolution: {integrity: sha512-0ZjgOg7oO6farnNGup7yvoM/YXZV84OZxHAwtflItNa/6zzQyVb5LNxyea3FEKEX2XlagIKzrlH7wwxkKgtiew==}
@@ -632,6 +641,10 @@ snapshots:
   '@types/node@24.13.3':
     dependencies:
       undici-types: 7.18.2
+
+  '@vitejs/plugin-basic-ssl@2.3.0(vite@8.2.2(@types/node@24.13.3))':
+    dependencies:
+      vite: 8.2.2(@types/node@24.13.3)
 
   '@vitejs/plugin-vue@6.0.8(vite@8.2.2(@types/node@24.13.3))(vue@3.5.42(typescript@6.0.3))':
     dependencies:
