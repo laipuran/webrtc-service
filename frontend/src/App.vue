@@ -4,11 +4,13 @@ import JoinForm from './components/JoinForm.vue'
 import { useCall } from './composables/useCall'
 
 const SIGNALING_URL = `wss://${location.host}/ws`
+const isDev = import.meta.env.DEV
 
 const {
   status,
   errorMessage,
   selfId,
+  selfUsername,
   tiles,
   localStream,
   muted,
@@ -29,7 +31,8 @@ const {
 
     <template v-else>
       <div class="app__toolbar">
-        <span>You: {{ selfId }}</span>
+        <span v-if="isDev">You: {{ selfUsername }} ({{ selfId }})</span>
+        <span v-else>You: {{ selfUsername }}</span>
         <button type="button" @click="toggleMute">
           {{ muted ? 'Unmute' : 'Mute' }}
         </button>
@@ -37,7 +40,7 @@ const {
       </div>
       <CallStage
         :local-stream="localStream"
-        :local-label="selfId ?? 'you'"
+        :local-label="selfUsername || 'you'"
         :tiles="tiles"
       />
     </template>

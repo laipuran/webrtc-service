@@ -20,11 +20,11 @@ function submit(): void {
 <template>
   <form class="join-form" @submit.prevent="submit">
     <label>
-      Room
+      Room ID
       <input v-model="roomId" placeholder="e.g. demo" />
     </label>
     <label>
-      Room key
+      Room Key
       <input v-model="auth" placeholder="shared secret" />
     </label>
     <label>

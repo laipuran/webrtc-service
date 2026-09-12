@@ -16,7 +16,7 @@ defineProps<{
       v-for="tile in tiles"
       :key="tile.memberId"
       :stream="tile.stream"
-      :label="tile.username || tile.memberId"
+      :label="tile.username || 'Connecting…'"
     />
   </div>
 </template>

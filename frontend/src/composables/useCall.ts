@@ -20,6 +20,7 @@ export function useCall(signalingUrl: string) {
   const status = ref<CallStatus>('idle')
   const errorMessage = ref<string | null>(null)
   const selfId = ref<string | null>(null)
+  const selfUsername = ref('')
   const tiles = ref<PeerTile[]>([])
   const localStream = ref<MediaStream | null>(null)
   const muted = ref(false)
@@ -105,6 +106,11 @@ export function useCall(signalingUrl: string) {
           status.value = 'error'
           return
         }
+        for (const member of message.members) {
+          if (member.member_id !== self) {
+            upsertTile(member.member_id, { username: member.username })
+          }
+        }
         for (const member of selectNewMembers(
           [...peers.keys()],
           message.members,
@@ -146,6 +152,7 @@ export function useCall(signalingUrl: string) {
       peer.close()
     }
     peers.clear()
+    selfUsername.value = ''
     tiles.value = []
     signaling?.close()
     signaling = null
@@ -161,6 +168,7 @@ export function useCall(signalingUrl: string) {
   ): Promise<void> {
     status.value = 'connecting'
     errorMessage.value = null
+    selfUsername.value = username
 
     try {
       localStream.value = await navigator.mediaDevices.getUserMedia({
@@ -216,6 +224,7 @@ export function useCall(signalingUrl: string) {
     status,
     errorMessage,
     selfId,
+    selfUsername,
     tiles,
     localStream,
     muted,
