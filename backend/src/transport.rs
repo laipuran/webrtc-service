@@ -1,8 +1,13 @@
+use std::time::Duration;
+
 use crossfire::{MTx, mpsc};
 use futures_util::{SinkExt, StreamExt};
 use log::{debug, error, info};
 use serde::{Serialize, de::DeserializeOwned};
-use tokio::net::TcpStream;
+use tokio::{
+    net::TcpStream,
+    time::{MissedTickBehavior, interval},
+};
 use tokio_tungstenite::{accept_async, tungstenite::Message};
 
 pub type OutboundSender<O> = MTx<mpsc::List<O>>;
@@ -10,6 +15,8 @@ pub type OutboundSender<O> = MTx<mpsc::List<O>>;
 pub type ConnEstablishHandler<O, C> = Box<dyn FnOnce(OutboundSender<O>) -> C + Send>;
 pub type ClientMessageHandler<I, C> = Box<dyn FnMut(&mut C, I) -> anyhow::Result<()> + Send>;
 pub type ConnCloseHandler<C> = Box<dyn FnOnce(C) + Send>;
+
+const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(30);
 
 pub struct WebSockHandler<I, O, C>
 where
@@ -66,8 +73,13 @@ where
         } = self;
 
         tokio::spawn(async move {
+            let mut heartbeat = interval(HEARTBEAT_INTERVAL);
+            heartbeat.set_missed_tick_behavior(MissedTickBehavior::Delay);
+            heartbeat.tick().await;
+
             loop {
                 let message = tokio::select! {
+                    _ = heartbeat.tick()=>Message::Ping(Vec::new().into()),
                     outbound = outbound_recv.recv() => match outbound {
                         Ok(message) => match serde_json::to_string(&message) {
                             Ok(text) => Message::Text(text.into()),
