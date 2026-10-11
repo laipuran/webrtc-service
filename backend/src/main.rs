@@ -2,6 +2,7 @@ mod handler;
 mod message;
 mod room;
 mod state;
+mod topology;
 mod transport;
 
 use std::error::Error;
