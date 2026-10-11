@@ -45,16 +45,8 @@ where
     }
 
     pub fn add(&mut self, from: &MemberId, to: &MemberId, weight: W) -> GraphResult<()> {
-        let from = self
-            .indices
-            .get(from)
-            .copied()
-            .ok_or(GraphError::UnknownMember)?;
-        let to = self
-            .indices
-            .get(to)
-            .copied()
-            .ok_or(GraphError::UnknownMember)?;
+        let from = self.resolve_member(from)?;
+        let to = self.resolve_member(to)?;
 
         if from == to {
             return Err(GraphError::SelfCycle);
@@ -69,6 +61,13 @@ where
             self.edges.insert(edge, weight);
         }
         Ok(())
+    }
+
+    fn resolve_member(&self, member: &MemberId) -> GraphResult<NodeIndex> {
+        self.indices
+            .get(member)
+            .copied()
+            .ok_or(GraphError::UnknownMember)
     }
 
     pub fn build(self) -> AdjacencyList<W> {

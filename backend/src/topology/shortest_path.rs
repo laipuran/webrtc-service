@@ -11,7 +11,7 @@ use crate::{
 };
 
 #[derive(Debug, Error, PartialEq, Eq)]
-pub enum DijkstraError {
+pub enum ShortestPathError {
     #[error("source member is not in graph")]
     UnknownSource,
     #[error("path weight overflow")]
@@ -47,11 +47,11 @@ where
 pub fn shortest_paths<W>(
     graph: &AdjacencyList<W>,
     source: &MemberId,
-) -> Result<ShortestPaths<W>, DijkstraError>
+) -> Result<ShortestPaths<W>, ShortestPathError>
 where
     W: Weight,
 {
-    let source = graph.index_of(source).ok_or(DijkstraError::UnknownSource)?;
+    let source = graph.index_of(source).ok_or(ShortestPathError::UnknownSource)?;
 
     let mut distances = vec![None; graph.node_count()];
     let mut parents = vec![None; graph.node_count()];
@@ -68,7 +68,7 @@ where
         for &(next, edge_weight) in graph.outgoing(current) {
             let candidate_distance = current_distance
                 .checked_add(edge_weight)
-                .ok_or(DijkstraError::WeightOverflow)?;
+                .ok_or(ShortestPathError::WeightOverflow)?;
 
             let next_position = next.position();
             let should_update = distances[next_position]

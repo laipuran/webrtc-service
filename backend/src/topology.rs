@@ -1,3 +1,3 @@
-pub mod dijkstra;
+pub mod shortest_path;
 pub mod graph;
 pub mod weight;
