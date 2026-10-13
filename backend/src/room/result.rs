@@ -12,6 +12,8 @@ pub enum RoomError {
     MemberNotExists,
     #[error("Edge has the same from and to")]
     SelfCycle,
+    #[error("Duplicate link target")]
+    DuplicateLink,
     #[error("Topology graph failed: {0}")]
     Graph(#[from] GraphError),
     #[error("Topology shortest paths failed: {0}")]

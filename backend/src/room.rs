@@ -1,25 +1,17 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::{
-    message::{ForwardingRoute, MemberSummary, MemberTopology, ServerMessage},
+    message::{ForwardingRoute, Link, MemberSummary, MemberTopology, ServerMessage},
     room::{
         member::{Member, MemberId},
         result::{RoomError, RoomResult},
     },
-    topology::{
-        graph::GraphBuilder, metric::LinkMetrics, shortest_path::shortest_paths, weight::LinkCost,
-    },
+    topology::{graph::GraphBuilder, shortest_path::shortest_paths, weight::LinkCost},
 };
 
 pub mod id;
 pub mod member;
 pub mod result;
-
-#[derive(Debug, PartialEq, Eq, Clone, Hash, Copy)]
-pub struct RoomEdge {
-    pub from: MemberId,
-    pub to: MemberId,
-}
 
 pub struct BuiltTopology {
     pub cost: f64,
@@ -29,7 +21,7 @@ pub struct BuiltTopology {
 pub struct Room {
     members: Vec<Member>,
     auth: Option<String>,
-    edges: HashMap<RoomEdge, LinkMetrics>,
+    links: HashMap<MemberId, Vec<Link>>,
 }
 
 impl Room {
@@ -37,7 +29,7 @@ impl Room {
         Self {
             members: Vec::new(),
             auth: None,
-            edges: HashMap::new(),
+            links: HashMap::new(),
         }
     }
 
@@ -67,12 +59,12 @@ impl Room {
     }
 
     pub fn leave(&mut self, member: &MemberId) -> RoomResult<()> {
-        // Clean up the member's edges
-        self.edges
-            .retain(|edge, _| edge.from != *member && edge.to != *member);
-
         if let Some(pos) = self.members.iter().position(|m| &m.id == member) {
             self.members.remove(pos);
+            self.links.remove(member);
+            for links in self.links.values_mut() {
+                links.retain(|link| link.to != *member);
+            }
             Ok(())
         } else {
             Err(RoomError::MemberNotExists)
@@ -104,16 +96,26 @@ impl Room {
             .collect()
     }
 
-    pub fn insert_edge(&mut self, edge: RoomEdge, metrics: LinkMetrics) -> RoomResult<()> {
-        if edge.from == edge.to {
-            return Err(RoomError::SelfCycle);
+    pub fn replace_links(&mut self, from: MemberId, links: Vec<Link>) -> RoomResult<()> {
+        let members: HashSet<_> = self.members.iter().map(|member| member.id).collect();
+        if !members.contains(&from) {
+            return Err(RoomError::MemberNotExists);
         }
 
-        if let Some(previous_metrics) = self.edges.get_mut(&edge) {
-            *previous_metrics = metrics;
-        } else {
-            self.edges.insert(edge, metrics);
+        let mut targets = HashSet::new();
+        for link in &links {
+            if link.to == from {
+                return Err(RoomError::SelfCycle);
+            }
+            if !members.contains(&link.to) {
+                return Err(RoomError::MemberNotExists);
+            }
+            if !targets.insert(link.to) {
+                return Err(RoomError::DuplicateLink);
+            }
         }
+
+        self.links.insert(from, links);
         Ok(())
     }
 
@@ -125,9 +127,9 @@ impl Room {
             .map(|&id| (id, MemberTopology { routes: Vec::new() }))
             .collect();
 
-        for (edge, metrics) in &self.edges {
-            if members.contains_key(&edge.from) && members.contains_key(&edge.to) {
-                builder.add(&edge.from, &edge.to, metrics.cost())?;
+        for (from, links) in &self.links {
+            for link in links {
+                builder.add(from, &link.to, link.metrics.cost())?;
             }
         }
 

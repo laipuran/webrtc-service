@@ -4,7 +4,7 @@ use tokio::net::TcpStream;
 use crate::{
     message::{ClientMessage, Link, ServerMessage, Signal},
     room::{
-        Room, RoomEdge,
+        Room,
         id::RoomId,
         member::{Member, MemberId},
         result::RoomError,
@@ -121,16 +121,10 @@ fn handle_links(state: &AppState, connection: &Connection, links: Vec<Link>) {
         return;
     };
 
-    let from = &connection.member.id;
-    for link in links {
-        let edge = RoomEdge {
-            from: from.clone(),
-            to: link.to,
-        };
-        if let Err(e) = room.insert_edge(edge, link.metrics) {
-            warn!("handle links failed: {}", e);
-            connection.member.submit_error(e);
-        }
+    if let Err(e) = room.replace_links(connection.member.id, links) {
+        warn!("handle links failed: {}", e);
+        connection.member.submit_error(e);
+        return;
     }
 
     match room.build_topo() {
