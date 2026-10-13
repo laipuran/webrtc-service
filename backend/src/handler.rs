@@ -134,9 +134,9 @@ fn handle_links(state: &AppState, connection: &Connection, links: Vec<Link>) {
     }
 
     match room.build_topo() {
-        Ok(built) if is_worthy(built.quality) => {
+        Ok(built) if is_worthy(built.cost) => {
             for (member_id, topology) in built.members {
-                if let Err(e) = room.send_to(&member_id, ServerMessage::Topo { topology }) {
+                if let Err(e) = room.send_to(&member_id, ServerMessage::Topology { topology }) {
                     warn!("send topology failed: {}", e);
                     connection.member.submit_error(e);
                 }
@@ -150,7 +150,7 @@ fn handle_links(state: &AppState, connection: &Connection, links: Vec<Link>) {
     }
 }
 
-fn is_worthy(_quality: f64) -> bool {
+fn is_worthy(_cost: f64) -> bool {
     true
 }
 

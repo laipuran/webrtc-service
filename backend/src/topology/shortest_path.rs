@@ -6,7 +6,7 @@ use crate::{
     room::member::MemberId,
     topology::{
         graph::{AdjacencyList, NodeIndex},
-        weight::Weight,
+        weight::LinkCost,
     },
 };
 
@@ -18,24 +18,18 @@ pub enum ShortestPathError {
     WeightOverflow,
 }
 
-pub struct ShortestPaths<W>
-where
-    W: Weight,
-{
+pub struct ShortestPaths {
     source: NodeIndex,
-    distances: Vec<Option<W>>,
+    distances: Vec<Option<LinkCost>>,
     parents: Vec<Option<NodeIndex>>,
 }
 
-impl<W> ShortestPaths<W>
-where
-    W: Weight,
-{
+impl ShortestPaths {
     pub fn source(&self) -> NodeIndex {
         self.source
     }
 
-    pub fn distance_to(&self, target: NodeIndex) -> Option<W> {
+    pub fn distance_to(&self, target: NodeIndex) -> Option<LinkCost> {
         self.distances[target.position()]
     }
 
@@ -44,21 +38,20 @@ where
     }
 }
 
-pub fn shortest_paths<W>(
-    graph: &AdjacencyList<W>,
+pub fn shortest_paths(
+    graph: &AdjacencyList,
     source: &MemberId,
-) -> Result<ShortestPaths<W>, ShortestPathError>
-where
-    W: Weight,
-{
-    let source = graph.index_of(source).ok_or(ShortestPathError::UnknownSource)?;
+) -> Result<ShortestPaths, ShortestPathError> {
+    let source = graph
+        .index_of(source)
+        .ok_or(ShortestPathError::UnknownSource)?;
 
     let mut distances = vec![None; graph.node_count()];
     let mut parents = vec![None; graph.node_count()];
     let mut queue = BinaryHeap::new();
 
-    distances[source.position()] = Some(W::zero());
-    queue.push(Reverse((W::zero(), source)));
+    distances[source.position()] = Some(LinkCost::zero());
+    queue.push(Reverse((LinkCost::zero(), source)));
 
     while let Some(Reverse((current_distance, current))) = queue.pop() {
         if distances[current.position()] != Some(current_distance) {

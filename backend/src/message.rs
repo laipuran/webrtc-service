@@ -43,15 +43,15 @@ pub enum ClientMessage {
     },
 }
 #[derive(Clone, Serialize)]
-pub struct TopologyRoute {
+pub struct ForwardingRoute {
     pub from: MemberId,
     pub to: MemberId,
-    pub belonging: MemberId,
+    pub source: MemberId,
 }
 
 #[derive(Clone, Serialize)]
 pub struct MemberTopology {
-    pub routes: Vec<TopologyRoute>,
+    pub routes: Vec<ForwardingRoute>,
 }
 
 #[derive(Serialize, Clone)]
@@ -74,7 +74,7 @@ pub enum ServerMessage {
         from: MemberId,
         signal: Signal,
     },
-    Topo {
+    Topology {
         topology: MemberTopology,
     },
 }

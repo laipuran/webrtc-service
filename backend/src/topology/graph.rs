@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 use thiserror::Error;
 
-use crate::{room::member::MemberId, topology::weight::Weight};
+use crate::{room::member::MemberId, topology::weight::LinkCost};
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash)]
 pub struct NodeIndex(usize);
@@ -19,18 +19,12 @@ struct Edge {
     to: NodeIndex,
 }
 
-pub struct GraphBuilder<W>
-where
-    W: Weight,
-{
+pub struct GraphBuilder {
     indices: HashMap<MemberId, NodeIndex>,
-    edges: HashMap<Edge, W>,
+    edges: HashMap<Edge, LinkCost>,
 }
 
-impl<W> GraphBuilder<W>
-where
-    W: Weight,
-{
+impl GraphBuilder {
     pub fn new(members: &[MemberId]) -> Self {
         let members: HashSet<MemberId> = members.iter().cloned().collect();
         let mut indices: HashMap<MemberId, NodeIndex> = HashMap::new();
@@ -44,7 +38,7 @@ where
         }
     }
 
-    pub fn add(&mut self, from: &MemberId, to: &MemberId, weight: W) -> GraphResult<()> {
+    pub fn add(&mut self, from: &MemberId, to: &MemberId, weight: LinkCost) -> GraphResult<()> {
         let from = self.resolve_member(from)?;
         let to = self.resolve_member(to)?;
 
@@ -70,7 +64,7 @@ where
             .ok_or(GraphError::UnknownMember)
     }
 
-    pub fn build(self) -> AdjacencyList<W> {
+    pub fn build(self) -> AdjacencyList {
         let Self { indices, edges } = self;
         let len = indices.len();
 
@@ -102,19 +96,13 @@ where
     }
 }
 
-pub struct AdjacencyList<W>
-where
-    W: Weight,
-{
+pub struct AdjacencyList {
     members: Vec<MemberId>,
     indices: HashMap<MemberId, NodeIndex>,
-    edges: Vec<Vec<(NodeIndex, W)>>,
+    edges: Vec<Vec<(NodeIndex, LinkCost)>>,
 }
 
-impl<W> AdjacencyList<W>
-where
-    W: Weight,
-{
+impl AdjacencyList {
     pub fn index_of(&self, member: &MemberId) -> Option<NodeIndex> {
         self.indices.get(member).copied()
     }
@@ -123,7 +111,7 @@ where
         self.members.len()
     }
 
-    pub fn outgoing(&self, from: NodeIndex) -> &[(NodeIndex, W)] {
+    pub fn outgoing(&self, from: NodeIndex) -> &[(NodeIndex, LinkCost)] {
         &self.edges[from.position()]
     }
 
@@ -132,10 +120,7 @@ where
     }
 }
 
-impl<W> Default for AdjacencyList<W>
-where
-    W: Weight,
-{
+impl Default for AdjacencyList {
     fn default() -> Self {
         Self {
             members: Vec::new(),

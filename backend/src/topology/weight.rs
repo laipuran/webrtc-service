@@ -1,10 +1,5 @@
 use serde::Deserialize;
 
-pub trait Weight: Copy + Ord {
-    fn zero() -> Self;
-    fn checked_add(self, rhs: Self) -> Option<Self>;
-}
-
 #[derive(Eq, Ord, Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub struct LinkCost(u64);
 
@@ -16,14 +11,11 @@ impl LinkCost {
     pub fn value(self) -> u64 {
         self.0
     }
-}
-
-impl Weight for LinkCost {
-    fn zero() -> Self {
+    pub fn zero() -> Self {
         Self(0)
     }
 
-    fn checked_add(self, rhs: Self) -> Option<Self> {
+    pub fn checked_add(self, rhs: Self) -> Option<Self> {
         self.0.checked_add(rhs.0).map(Self)
     }
 }
@@ -38,15 +30,5 @@ impl Latency {
 
     pub fn as_millis(self) -> u64 {
         self.0
-    }
-}
-
-impl Weight for Latency {
-    fn zero() -> Self {
-        Self(0)
-    }
-
-    fn checked_add(self, rhs: Self) -> Option<Self> {
-        self.0.checked_add(rhs.0).map(Self)
     }
 }

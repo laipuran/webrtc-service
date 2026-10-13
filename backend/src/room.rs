@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
-    message::{MemberSummary, MemberTopology, ServerMessage, TopologyRoute},
+    message::{ForwardingRoute, MemberSummary, MemberTopology, ServerMessage},
     room::{
         member::{Member, MemberId},
         result::{RoomError, RoomResult},
@@ -22,7 +22,7 @@ pub struct RoomEdge {
 }
 
 pub struct BuiltTopology {
-    pub quality: f64,
+    pub cost: f64,
     pub members: HashMap<MemberId, MemberTopology>,
 }
 
@@ -68,6 +68,8 @@ impl Room {
 
     pub fn leave(&mut self, member: &MemberId) -> RoomResult<()> {
         // Clean up the member's edges
+        self.edges
+            .retain(|edge, _| edge.from != *member && edge.to != *member);
 
         if let Some(pos) = self.members.iter().position(|m| &m.id == member) {
             self.members.remove(pos);
@@ -117,7 +119,7 @@ impl Room {
 
     pub fn build_topo(&self) -> RoomResult<BuiltTopology> {
         let member_ids: Vec<_> = self.members.iter().map(|member| member.id).collect();
-        let mut builder = GraphBuilder::<LinkCost>::new(&member_ids);
+        let mut builder = GraphBuilder::new(&member_ids);
         let mut members: HashMap<_, _> = member_ids
             .iter()
             .map(|&id| (id, MemberTopology { routes: Vec::new() }))
@@ -141,10 +143,10 @@ impl Room {
                 distances.push(paths.distance_to(target_index));
                 if let Some(parent) = paths.parent_of(target_index) {
                     let from = *graph.member_at(parent);
-                    let route = TopologyRoute {
+                    let route = ForwardingRoute {
                         from,
                         to: *target,
-                        belonging: *source,
+                        source: *source,
                     };
                     members
                         .get_mut(&from)
@@ -161,7 +163,7 @@ impl Room {
         }
 
         Ok(BuiltTopology {
-            quality: evaluate(&distances),
+            cost: evaluate(&distances),
             members,
         })
     }
