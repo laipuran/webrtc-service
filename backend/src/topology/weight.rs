@@ -1,9 +1,11 @@
+use serde::Deserialize;
+
 pub trait Weight: Copy + Ord {
     fn zero() -> Self;
     fn checked_add(self, rhs: Self) -> Option<Self>;
 }
 
-#[derive(Eq, Ord, Clone, Copy, Debug, PartialEq, PartialOrd)]
+#[derive(Eq, Ord, Clone, Copy, Debug, PartialEq, PartialOrd,Deserialize)]
 pub struct Latency(u64);
 
 impl Latency {
