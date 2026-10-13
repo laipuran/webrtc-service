@@ -2,7 +2,7 @@ use log::warn;
 use tokio::net::TcpStream;
 
 use crate::{
-    message::{ClientMessage, ServerMessage, Signal},
+    message::{ClientMessage, Link, ServerMessage, Signal},
     room::{
         Room,
         id::RoomId,
@@ -113,6 +113,10 @@ fn forward_signal(state: &AppState, connection: &Connection, to: MemberId, signa
     }
 }
 
+fn handle_links(state: &AppState, connection: &Connection, links: Vec<Link>) {
+    
+}
+
 fn handle_client_message(state: &AppState, connection: &mut Connection, message: ClientMessage) {
     match message {
         ClientMessage::Join {
@@ -122,6 +126,7 @@ fn handle_client_message(state: &AppState, connection: &mut Connection, message:
         } => join_room(state, connection, room_id, auth, username),
         ClientMessage::Leave => leave_room(state, connection),
         ClientMessage::Signal { to, signal } => forward_signal(state, connection, to, signal),
+        ClientMessage::Links { links } => handle_links(state, connection, links),
     }
 }
 

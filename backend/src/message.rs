@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-use crate::room::{id::RoomId, member::MemberId};
+use crate::{
+    room::{id::RoomId, member::MemberId},
+    topology::metric::LinkMetrics,
+};
 
 #[derive(Clone, Serialize)]
 pub struct MemberSummary {
@@ -29,6 +32,15 @@ pub enum ClientMessage {
         to: MemberId,
         signal: Signal,
     },
+    Links {
+        links: Vec<Link>,
+    },
+}
+
+#[derive(Deserialize)]
+pub struct Link {
+    to: MemberId,
+    metrics: LinkMetrics,
 }
 
 #[derive(Serialize, Clone)]
