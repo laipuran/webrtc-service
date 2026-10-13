@@ -20,6 +20,12 @@ pub enum Signal {
 }
 
 #[derive(Deserialize)]
+pub struct Link {
+    pub to: MemberId,
+    pub metrics: LinkMetrics,
+}
+
+#[derive(Deserialize)]
 #[serde(tag = "type")]
 pub enum ClientMessage {
     Join {
@@ -36,11 +42,16 @@ pub enum ClientMessage {
         links: Vec<Link>,
     },
 }
+#[derive(Clone, Serialize)]
+pub struct TopologyRoute {
+    pub from: MemberId,
+    pub to: MemberId,
+    pub belonging: MemberId,
+}
 
-#[derive(Deserialize)]
-pub struct Link {
-    to: MemberId,
-    metrics: LinkMetrics,
+#[derive(Clone, Serialize)]
+pub struct MemberTopology {
+    pub routes: Vec<TopologyRoute>,
 }
 
 #[derive(Serialize, Clone)]
@@ -62,5 +73,8 @@ pub enum ServerMessage {
     Signal {
         from: MemberId,
         signal: Signal,
+    },
+    Topo {
+        topology: MemberTopology,
     },
 }

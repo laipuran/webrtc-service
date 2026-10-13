@@ -4,7 +4,7 @@ use tokio::net::TcpStream;
 use crate::{
     message::{ClientMessage, Link, ServerMessage, Signal},
     room::{
-        Room,
+        Room, RoomEdge,
         id::RoomId,
         member::{Member, MemberId},
         result::RoomError,
@@ -114,7 +114,44 @@ fn forward_signal(state: &AppState, connection: &Connection, to: MemberId, signa
 }
 
 fn handle_links(state: &AppState, connection: &Connection, links: Vec<Link>) {
-    
+    let Some(room_id) = connection.room_id.as_ref() else {
+        return;
+    };
+    let Some(mut room) = state.rooms().get_mut(room_id) else {
+        return;
+    };
+
+    let from = &connection.member.id;
+    for link in links {
+        let edge = RoomEdge {
+            from: from.clone(),
+            to: link.to,
+        };
+        if let Err(e) = room.insert_edge(edge, link.metrics) {
+            warn!("handle links failed: {}", e);
+            connection.member.submit_error(e);
+        }
+    }
+
+    match room.build_topo() {
+        Ok(built) if is_worthy(built.quality) => {
+            for (member_id, topology) in built.members {
+                if let Err(e) = room.send_to(&member_id, ServerMessage::Topo { topology }) {
+                    warn!("send topology failed: {}", e);
+                    connection.member.submit_error(e);
+                }
+            }
+        }
+        Ok(_) => {}
+        Err(e) => {
+            warn!("build topology failed: {}", e);
+            connection.member.submit_error(e);
+        }
+    }
+}
+
+fn is_worthy(_quality: f64) -> bool {
+    true
 }
 
 fn handle_client_message(state: &AppState, connection: &mut Connection, message: ClientMessage) {

@@ -1,12 +1,14 @@
 use std::collections::HashMap;
 
 use crate::{
-    message::{MemberSummary, ServerMessage},
+    message::{MemberSummary, MemberTopology, ServerMessage, TopologyRoute},
     room::{
         member::{Member, MemberId},
         result::{RoomError, RoomResult},
     },
-    topology::metric::LinkMetrics,
+    topology::{
+        graph::GraphBuilder, metric::LinkMetrics, shortest_path::shortest_paths, weight::LinkCost,
+    },
 };
 
 pub mod id;
@@ -15,8 +17,13 @@ pub mod result;
 
 #[derive(Debug, PartialEq, Eq, Clone, Hash, Copy)]
 pub struct RoomEdge {
-    from: MemberId,
-    to: MemberId,
+    pub from: MemberId,
+    pub to: MemberId,
+}
+
+pub struct BuiltTopology {
+    pub quality: f64,
+    pub members: HashMap<MemberId, MemberTopology>,
 }
 
 pub struct Room {
@@ -107,4 +114,62 @@ impl Room {
         }
         Ok(())
     }
+
+    pub fn build_topo(&self) -> RoomResult<BuiltTopology> {
+        let member_ids: Vec<_> = self.members.iter().map(|member| member.id).collect();
+        let mut builder = GraphBuilder::<LinkCost>::new(&member_ids);
+        let mut members: HashMap<_, _> = member_ids
+            .iter()
+            .map(|&id| (id, MemberTopology { routes: Vec::new() }))
+            .collect();
+
+        for (edge, metrics) in &self.edges {
+            if members.contains_key(&edge.from) && members.contains_key(&edge.to) {
+                builder.add(&edge.from, &edge.to, metrics.cost())?;
+            }
+        }
+
+        let graph = builder.build();
+        let mut distances = Vec::new();
+        for source in &member_ids {
+            let paths = shortest_paths(&graph, source)?;
+            for target in &member_ids {
+                if source == target {
+                    continue;
+                }
+                let target_index = graph.index_of(target).ok_or(RoomError::MemberNotExists)?;
+                distances.push(paths.distance_to(target_index));
+                if let Some(parent) = paths.parent_of(target_index) {
+                    let from = *graph.member_at(parent);
+                    let route = TopologyRoute {
+                        from,
+                        to: *target,
+                        belonging: *source,
+                    };
+                    members
+                        .get_mut(&from)
+                        .ok_or(RoomError::MemberNotExists)?
+                        .routes
+                        .push(route.clone());
+                    members
+                        .get_mut(target)
+                        .ok_or(RoomError::MemberNotExists)?
+                        .routes
+                        .push(route);
+                }
+            }
+        }
+
+        Ok(BuiltTopology {
+            quality: evaluate(&distances),
+            members,
+        })
+    }
+}
+
+fn evaluate(distances: &[Option<LinkCost>]) -> f64 {
+    distances
+        .iter()
+        .map(|distance| distance.map_or(f64::INFINITY, |cost| cost.value() as f64))
+        .sum()
 }
