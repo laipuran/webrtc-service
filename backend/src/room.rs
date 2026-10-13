@@ -1,18 +1,28 @@
+use std::collections::HashMap;
+
 use crate::{
     message::{MemberSummary, ServerMessage},
     room::{
         member::{Member, MemberId},
         result::{RoomError, RoomResult},
     },
+    topology::metric::LinkMetrics,
 };
 
 pub mod id;
 pub mod member;
 pub mod result;
 
+#[derive(Debug, PartialEq, Eq, Clone, Hash, Copy)]
+pub struct RoomEdge {
+    from: MemberId,
+    to: MemberId,
+}
+
 pub struct Room {
     members: Vec<Member>,
     auth: Option<String>,
+    edges: HashMap<RoomEdge, LinkMetrics>,
 }
 
 impl Room {
@@ -20,6 +30,7 @@ impl Room {
         Self {
             members: Vec::new(),
             auth: None,
+            edges: HashMap::new(),
         }
     }
 
@@ -49,6 +60,8 @@ impl Room {
     }
 
     pub fn leave(&mut self, member: &MemberId) -> RoomResult<()> {
+        // Clean up the member's edges
+
         if let Some(pos) = self.members.iter().position(|m| &m.id == member) {
             self.members.remove(pos);
             Ok(())
@@ -80,5 +93,18 @@ impl Room {
                 username: m.username.clone(),
             })
             .collect()
+    }
+
+    pub fn insert_edge(&mut self, edge: RoomEdge, metrics: LinkMetrics) -> RoomResult<()> {
+        if edge.from == edge.to {
+            return Err(RoomError::SelfCycle);
+        }
+
+        if let Some(previous_metrics) = self.edges.get_mut(&edge) {
+            *previous_metrics = metrics;
+        } else {
+            self.edges.insert(edge, metrics);
+        }
+        Ok(())
     }
 }

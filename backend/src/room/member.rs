@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{message::ServerMessage, transport::OutboundSender};
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize,Copy)]
 pub struct MemberId(uuid::Uuid);
 
 impl MemberId {

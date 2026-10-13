@@ -8,6 +8,8 @@ pub enum RoomError {
     JoinedTwice,
     #[error("Member not in room")]
     MemberNotExists,
+    #[error("Edge has the same from and to")]
+    SelfCycle,
     // #[error("Room does not exist")]
     // RoomNotExists,
 }
