@@ -1,0 +1,27 @@
+{
+  "name": "hamok-topology-experiment",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "baseline": "tsx src/node-baseline.ts",
+    "gate:node": "tsx src/node-baseline.ts --gate"
+  },
+  "dependencies": {
+    "hamok": "2.6.0",
+    "buffer": "6.0.3",
+    "events": "3.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.3",
+    "@types/events": "3.0.3",
+    "typescript": "6.0.2",
+    "vite": "8.2.2",
+    "vitest": "5.0.0",
+    "tsx": "4.21.0"
+  }
+}
