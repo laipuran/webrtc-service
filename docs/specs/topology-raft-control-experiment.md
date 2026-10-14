@@ -20,8 +20,8 @@ Hamok 实验记录真实源码中的投票集合修改路径、提交门槛、Ma
 
 | Ticket | 内容 | 阻塞关系 |
 |---|---|---|
-| T1 | 隔离包、Hamok adapter、源码审计与 Node 故障注入基线 | 无 |
-| T2 | 人工图的纯规划器与正确性测试 | 无；独立子目录，最终接入 T1 包 |
-| T3 | 独立浏览器上下文、分区矩阵、安全 gate 与路线报告 | T1、T2 |
+| [T1 / #5](https://github.com/laipuran/webrtc-service/issues/5) | 隔离包、Hamok adapter、源码审计与 Node 故障注入基线 | 无 |
+| [T2 / #3](https://github.com/laipuran/webrtc-service/issues/3) | 人工图的纯规划器与正确性测试 | 无；独立子目录，最终接入 T1 包 |
+| [T3 / #4](https://github.com/laipuran/webrtc-service/issues/4) | 独立浏览器上下文、分区矩阵、安全 gate 与路线报告 | T1、T2 |
 
 全部完成后审查本分支相对起点的代码与验收差距，修复后将 PR 标为可评审。现有未提交设计文档由用户维护，本轮不自动提交或改写。
