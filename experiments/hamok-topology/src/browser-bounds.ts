@@ -1,3 +1,5 @@
+import type { BrowserServer } from '@playwright/test';
+
 export const BOUNDS = { scenario: 90_000, operation: 10_000, cleanup: 3_000 } as const;
 
 export async function bounded<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
@@ -7,6 +9,28 @@ export async function bounded<T>(promise: Promise<T>, ms: number, label: string)
       timer = setTimeout(() => reject(new Error(`${label}: deadline ${ms}ms exceeded`)), Math.ceil(ms));
     })]);
   } finally { clearTimeout(timer); }
+}
+
+/** Retain launch ownership after a deadline: racing a promise does not cancel it. */
+export async function launchBrowserServer(
+  launch: (options: { timeout: number }) => Promise<BrowserServer>,
+  ms = 15_000, cleanupMs: number = BOUNDS.cleanup,
+) {
+  let abandoned = false;
+  const pending = launch({ timeout: ms }).then(async server => {
+    if (abandoned) {
+      try { await bounded(server.close(), cleanupMs, 'Late browser shutdown'); }
+      catch (error) {
+        console.error(error);
+        try { await bounded(server.kill(), cleanupMs, 'Late browser kill'); }
+        catch (error) { console.error(error); server.process().kill('SIGKILL'); }
+      }
+    }
+    return server;
+  });
+  // The race retains rejection handlers on pending, including late launch/cleanup failures.
+  try { return await bounded(pending, ms, 'Browser launch'); }
+  catch (error) { abandoned = true; throw error; }
 }
 
 /** Stop starting work after the watchdog; individual operations share its budget. */

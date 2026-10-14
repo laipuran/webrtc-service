@@ -1,6 +1,6 @@
-import { chromium } from '@playwright/test';
+import { chromium, type BrowserServer } from '@playwright/test';
 import { expect, it, vi } from 'vitest';
-import { bounded, cleanupBrowserScenario, scenarioBounds } from './browser-bounds';
+import { bounded, cleanupBrowserScenario, scenarioBounds, launchBrowserServer } from './browser-bounds';
 import { scenario } from './browser-runner';
 import { SCENARIOS } from './browser-evidence';
 import { execFile } from 'node:child_process';
@@ -8,6 +8,88 @@ import { promisify } from 'node:util';
 import { mkdtemp, writeFile, unlink, rmdir } from 'node:fs/promises';
 
 const never = () => new Promise<void>(() => {});
+
+it('closes a browser and its websocket server when launch succeeds after the deadline', async () => {
+  const server = await chromium.launchServer();
+  const close = vi.spyOn(server, 'close');
+  let resolve!: (server: BrowserServer) => void;
+  const delayed = new Promise<BrowserServer>(done => { resolve = done; });
+  const launch = vi.fn(() => delayed);
+  const closed = new Promise<void>(done => server.once('close', () => done()));
+  try {
+    await expect(launchBrowserServer(launch, 20)).rejects.toThrow('Browser launch: deadline');
+    expect(launch).toHaveBeenCalledWith({ timeout: 20 });
+    resolve(server);
+    await new Promise(done => setImmediate(done));
+    expect(close).toHaveBeenCalledOnce();
+    await bounded(closed, 3_000, 'Test browser closed');
+    await expect(chromium.connect(server.wsEndpoint(), { timeout: 1_000 })).rejects.toThrow();
+  } finally { await server.kill(); }
+});
+
+it('kills a late browser server if its graceful close stalls', async () => {
+  const server = await chromium.launchServer();
+  const close = vi.spyOn(server, 'close').mockImplementation(never);
+  const kill = vi.spyOn(server, 'kill');
+  const diagnostic = vi.spyOn(console, 'error').mockImplementation(() => {});
+  let resolve!: (server: BrowserServer) => void;
+  const delayed = new Promise<BrowserServer>(done => { resolve = done; });
+  const closed = new Promise<void>(done => server.once('close', () => done()));
+  try {
+    await expect(launchBrowserServer(() => delayed, 20, 20)).rejects.toThrow('Browser launch: deadline');
+    resolve(server);
+    await bounded(closed, 3_000, 'Test browser killed');
+    expect(close).toHaveBeenCalledOnce();
+    expect(kill).toHaveBeenCalledOnce();
+    await expect(chromium.connect(server.wsEndpoint(), { timeout: 1_000 })).rejects.toThrow();
+  } finally {
+    close.mockRestore();
+    diagnostic.mockRestore();
+    await server.kill();
+  }
+});
+
+it('handles a launch rejection arriving after the outer deadline', async () => {
+  let reject!: (error: Error) => void;
+  const delayed = new Promise<BrowserServer>((_, fail) => { reject = fail; });
+  const unhandled = vi.fn();
+  process.on('unhandledRejection', unhandled);
+  try {
+    await expect(launchBrowserServer(() => delayed, 20)).rejects.toThrow('Browser launch: deadline');
+    reject(new Error('Late native launch failure'));
+    await new Promise(done => setImmediate(done));
+    expect(unhandled).not.toHaveBeenCalled();
+  } finally { process.off('unhandledRejection', unhandled); }
+});
+
+it('handles late cleanup rejection and force-kills the process without an unhandled rejection', async () => {
+  const server = await chromium.launchServer();
+  const close = vi.spyOn(server, 'close').mockRejectedValue(new Error('Close failure'));
+  const kill = vi.spyOn(server, 'kill').mockRejectedValue(new Error('Kill failure'));
+  const forceKill = vi.spyOn(server.process(), 'kill');
+  const diagnostic = vi.spyOn(console, 'error').mockImplementation(() => {});
+  const unhandled = vi.fn();
+  process.on('unhandledRejection', unhandled);
+  let resolve!: (server: BrowserServer) => void;
+  const delayed = new Promise<BrowserServer>(done => { resolve = done; });
+  const closed = new Promise<void>(done => server.once('close', () => done()));
+  try {
+    await expect(launchBrowserServer(() => delayed, 20, 20)).rejects.toThrow('Browser launch: deadline');
+    resolve(server);
+    await bounded(closed, 3_000, 'Test browser force-killed');
+    await new Promise(done => setImmediate(done));
+    expect(forceKill).toHaveBeenCalledWith('SIGKILL');
+    expect(unhandled).not.toHaveBeenCalled();
+    await expect(chromium.connect(server.wsEndpoint(), { timeout: 1_000 })).rejects.toThrow();
+  } finally {
+    process.off('unhandledRejection', unhandled);
+    close.mockRestore();
+    kill.mockRestore();
+    forceKill.mockRestore();
+    diagnostic.mockRestore();
+    await server.kill();
+  }
+});
 
 it('times out never-resolving page JS and closes its context without page JS cleanup', async () => {
   const browser = await chromium.launch();

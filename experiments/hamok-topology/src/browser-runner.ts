@@ -5,7 +5,7 @@ import { performance } from 'node:perf_hooks';
 import { pathToFileURL } from 'node:url';
 import { HAMOK_VERSION, TIMING, type TraceEvent, type WirePacket } from './adapter';
 import { applications, assess, isObservedNoLeaderError, SCENARIOS } from './browser-evidence';
-import { bounded, BOUNDS, scenarioBounds, cleanupBrowserScenario } from './browser-bounds';
+import { bounded, BOUNDS, scenarioBounds, cleanupBrowserScenario, launchBrowserServer } from './browser-bounds';
 
 const seed = 20261014; // Records scenario selection, not native/browser scheduling randomness.
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -178,7 +178,7 @@ async function main() {
       const killBrowser = () => { browserServer?.process().kill('SIGKILL'); };
       try {
         await bounded(server.listen(), 10_000, 'Server listen');
-        browserServer = await bounded(chromium.launchServer(), 15_000, 'Browser launch');
+        browserServer = await launchBrowserServer(options => chromium.launchServer(options));
         browser = await bounded(chromium.connect(browserServer.wsEndpoint()), 10_000, 'Browser connect');
         const chromiumVersion = browser.version();
         const results = [];
