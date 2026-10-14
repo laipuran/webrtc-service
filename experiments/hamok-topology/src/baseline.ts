@@ -1,5 +1,6 @@
 import { HAMOK_VERSION, TIMING } from './adapter';
 import { createFaultCluster, sleep, waitFor } from './fault-transport';
+import { applications as decodeApplications } from './application-evidence';
 
 export async function runPartitionBaseline() {
   const cluster = createFaultCluster(['a', 'b', 'c', 'd'], 'node-four-way-epoch-1');
@@ -19,16 +20,9 @@ export async function runPartitionBaseline() {
       cluster.nodes.get('c')!.propose({ revision: 1, digest: 'right' }),
     ]);
     await sleep(500);
-    const applications = [...cluster.nodes.entries()].flatMap(([peerId, node]) =>
-      node.trace().filter(event => event.kind === 'replicated-application').map(event => ({ peerId, event })));
-    const conflicting = applications.filter(({ event }) => {
-      const detail = event.detail as { entries: Record<string, { revision: number; digest: string }> };
-      return detail.entries.currentDecision?.revision === 1;
-    });
-    const digests = new Set(conflicting.map(({ event }) => {
-      const detail = event.detail as { entries: Record<string, { digest: string }> };
-      return detail.entries.currentDecision.digest;
-    }));
+    const applications = decodeApplications([...cluster.nodes.values()].flatMap(node => node.trace()));
+    const conflicting = applications.filter(item => item.value.revision === 1);
+    const digests = new Set(conflicting.map(item => item.value.digest));
     const errors = [...cluster.nodes.values()].flatMap(node => node.trace())
       .filter(event => ['error', 'receive-error', 'unindexed-map-request'].includes(event.kind));
     const unknown = writes.some(write => write.outcome === 'unknown');

@@ -45,14 +45,47 @@ export interface NodeState {
   entries: Record<string, Proposal>;
 }
 
-export interface TraceEvent {
+interface TraceDetails {
+  error: string;
+  'receive-error': string;
+  'state-changed': { role: string; previous: string };
+  'leader-changed': { leader: string | undefined; previous: string | undefined };
+  'remote-peer-joined': string;
+  'remote-peer-left': string;
+  'no-heartbeat-from': string;
+  'unsynced-peer': string;
+  rejoining: null;
+  'raft-commit': { index: number; requestId?: string; storageId?: string; type?: number };
+  'map-insert': { key: string; value: Proposal };
+  'map-update': { key: string; previous: Proposal; value: Proposal };
+  'replicated-application': { index: number; requestId: string; entries: Record<string, Proposal> };
+  'unindexed-map-request': { index: null; requestId: string; entries: Record<string, Proposal> };
+  'snapshot-import': { serialized: string };
+  'snapshot-position-observation': null;
+  bootstrap: { hamokVersion: string; timing: typeof TIMING };
+  joined: null;
+  'rejected-envelope': null;
+  'rejected-identity': null;
+  'write-request': { key: string; value: Proposal };
+  'write-ack': { key: string; value: Proposal };
+  'write-unknown': { key: string; value: Proposal; error: string };
+  sample: string;
+  closing: null;
+}
+export type TraceEvent = {
+  [K in keyof TraceDetails]: {
   sequence: number;
   at: number;
   elapsedMs: number;
-  kind: string;
-  detail: unknown;
+  kind: K;
+  detail: TraceDetails[K];
   state: NodeState;
-}
+  }
+}[keyof TraceDetails];
+type TraceArguments = {
+  [K in keyof TraceDetails]: TraceDetails[K] extends null
+    ? [kind: K, detail?: null] : [kind: K, detail: TraceDetails[K]]
+}[keyof TraceDetails];
 
 export interface AdapterOptions {
   peerId: string;
@@ -101,9 +134,10 @@ export function createExperimentNode(options: AdapterOptions) {
     };
   }
 
-  function record(kind: string, detail: unknown = null) {
+  function record(...[kind, detail = null]: TraceArguments) {
     const at = Date.now();
-    const event = { sequence: trace.length, at, elapsedMs: at - startedAt, kind, detail, state: state() };
+    // The argument tuple checks the relationship at every emission site.
+    const event = { sequence: trace.length, at, elapsedMs: at - startedAt, kind, detail, state: state() } as TraceEvent;
     trace.push(event);
     options.onTrace?.(event);
   }
@@ -126,11 +160,12 @@ export function createExperimentNode(options: AdapterOptions) {
   // Map registered its synchronous request handler before these listeners.
   // Thus these observations are AFTER application, including buffered replay.
   map.connection.on('UpdateEntriesRequest', (request, index) => {
-    record(index === undefined ? 'unindexed-map-request' : 'replicated-application', {
-      index: index ?? null,
+    const detail = {
       requestId: request.requestId,
       entries: Object.fromEntries([...request.entries].map(([key, value]) => [key, JSON.parse(value)])),
-    });
+    };
+    if (index === undefined) record('unindexed-map-request', { ...detail, index: null });
+    else record('replicated-application', { ...detail, index });
   });
   map.connection.on('remote-snapshot', serialized => {
     record('snapshot-import', { serialized });
