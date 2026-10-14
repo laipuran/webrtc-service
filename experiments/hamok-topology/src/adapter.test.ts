@@ -37,7 +37,7 @@ describe('native Hamok experiment adapter', () => {
       for (const node of cluster.nodes.values()) {
         expect(node.state().actualVoters).toEqual(['a', 'b', 'c']);
         expect(node.trace().some(event => event.kind === 'replicated-application'
-          && (event.detail as { index: number }).index >= 0)).toBe(true);
+          && event.detail.index >= 0)).toBe(true);
       }
       expect(cluster.deliveries.some(delivery => delivery.bytes > 0)).toBe(true);
       expect([...cluster.nodes.values()].some(node => node.trace()
@@ -52,7 +52,7 @@ describe('native Hamok experiment adapter', () => {
       await waitFor(() => cluster.states().every(state => state.entries.currentDecision?.digest === 'late'));
       expect(proposer.trace().some(event => event.kind === 'write-unknown')).toBe(true);
       expect(proposer.trace().some(event => event.kind === 'write-ack'
-        && (event.detail as { value: { digest: string } }).value.digest === 'late')).toBe(true);
+        && event.detail.value.digest === 'late')).toBe(true);
     } finally { cluster.close(); }
   });
 });
