@@ -9,7 +9,10 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "baseline": "tsx src/node-baseline.ts",
-    "gate:node": "tsx src/node-baseline.ts --gate"
+    "gate:node": "tsx src/node-baseline.ts --gate",
+    "run:browser": "tsx src/browser-runner.ts",
+    "gate:browser": "tsx src/browser-runner.ts --gate",
+    "build:page": "vite build --config vite.page.config.ts"
   },
   "dependencies": {
     "hamok": "2.6.0",
@@ -22,6 +25,7 @@
     "typescript": "6.0.2",
     "vite": "8.2.2",
     "vitest": "5.0.0",
-    "tsx": "4.21.0"
+    "tsx": "4.21.0",
+    "@playwright/test": "1.64.0"
   }
 }

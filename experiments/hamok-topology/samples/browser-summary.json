@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "note": "Compact excerpt only; not a gate input. Full artifact is ignored.",
+  "artifactSha256": "fef2505626c52405622f69878b8da95d3bae00b965362fcca72200b274317d30",
+  "hamok": "2.6.0",
+  "playwright": "1.64.0",
+  "chromium": "156.0.8078.4",
+  "node": "v24.20.0",
+  "seed": 20261014,
+  "nativeElectionRandomness": "unseeded",
+  "mechanics": true,
+  "safetyGate": false,
+  "matrix": [
+    { "name": "stable-three", "indexedRevision1Applications": 3, "outcome": "observed-stable", "nativeErrors": 0 },
+    { "name": "two-disconnected", "partitionWaitMs": 33000.366078, "indexedRevision1Applications": 0, "outcome": "unknown", "nativeErrors": 2 },
+    { "name": "three-two-one", "partitionWaitMs": 33001.284139, "indexedRevision1Applications": 2, "outcome": "unknown", "nativeErrors": 1 },
+    { "name": "four-two-two", "partitionWaitMs": 32999.936793, "indexedRevision1Applications": 4, "outcome": "unsafe", "nativeErrors": 0 },
+    { "name": "three-singletons", "partitionWaitMs": 33000.642131, "indexedRevision1Applications": 0, "outcome": "unknown", "nativeErrors": 3 },
+    { "name": "old-leader-isolated", "groups": [["b"], ["a", "c"]], "oldLeader": "b", "partitionWaitMs": 33000.827407, "indexedRevision1Applications": 2, "outcome": "unknown", "nativeErrors": 1 }
+  ],
+  "counterexample": {
+    "roomEpoch": "browser-20261014-four-two-two",
+    "initialVoters": ["a", "b", "c", "d"],
+    "oldLeader": "c",
+    "revision": 1,
+    "kind": "replicated-application",
+    "key": "currentDecision",
+    "applications": [
+      { "peer": "c", "index": 1, "elapsedMs": 39007, "term": 1, "role": "leader", "actualVoters": ["c", "d"], "digest": "side-1" },
+      { "peer": "b", "index": 1, "elapsedMs": 39011, "term": 2, "role": "leader", "actualVoters": ["a", "b"], "digest": "side-0" },
+      { "peer": "d", "index": 1, "elapsedMs": 39047, "term": 1, "role": "follower", "actualVoters": ["c", "d"], "digest": "side-1" },
+      { "peer": "a", "index": 1, "elapsedMs": 39050, "term": 2, "role": "follower", "actualVoters": ["a", "b"], "digest": "side-0" }
+    ],
+    "separateSnapshotEvidence": {
+      "kind": "snapshot-import",
+      "count": 4,
+      "elapsedMsRange": [5743, 5777],
+      "entries": {},
+      "highestSeenMapCommitIndex": -1,
+      "phase": "startup, before baseline replication"
+    }
+  },
+  "allScenarios": { "completed": true, "harnessErrors": 0, "pageerrors": 0, "consoleErrors": 0, "startupEmptySnapshotImports": 18, "unsyncedPeerEvents": 0 }
+}
